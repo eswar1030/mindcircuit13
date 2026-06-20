@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mc-app
+  namespace: my-app-prod
   labels:
     app: mc-app
 spec:
