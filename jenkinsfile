@@ -1,25 +1,59 @@
 pipeline {
     agent any
 
+    environment {
+        // Your Jenkins credential ID storing the GitHub Username & Personal Access Token
+        GITHUB_CRED_ID = 'jenkins-push-token-v2' 
+    }
+
     stages {
         stage('CLONE SCM') {
             steps {
                 echo 'Cloning Mc-app project code'
-				git branch: 'main', url: 'https://github.com/eswar1030/mindcircuit13.git'
+                git branch: 'main', url: 'https://github.com/eswar1030/mindcircuit13.git'
             }
         }
-		
-		stage('Build Artifact ') {
+
+        stage('Build Artifact') {
             steps {
-                echo 'generating artifact with maven build tool'
-				sh 'mvn clean install'
+                echo 'Generating artifact with maven build tool'
+                sh 'mvn clean install'
             }
         }
-		
-		stage('Deploy to tomcat') {
+
+        stage('Update Deployment File & Push to Fork') {
             steps {
-                echo 'Deploying artifact to tomcat webserver '
-				deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'https://${GITHUB_TOKEN}@github.com/eswar1030/mindcircuit13.git HEAD:main')], contextPath: 'facebook-app', war: '**/*.war'
+                // Uses usernamePassword binding for Git authentication
+                withCredentials([usernamePassword(
+                    credentialsId: "${GITHUB_CRED_ID}", 
+                    usernameVariable: 'GIT_USER', 
+                    passwordVariable: 'GIT_TOKEN'
+                )]) {
+                    sh '''
+                        git config user.email "devopstraininghub@gmail.com"
+                        git config user.name "DevOps Bot"
+
+                        # Update deployment image version
+                        sed -i 's/batch13:.*/batch13:13/g' deploymentfiles/deployment.yml
+
+                        # Stage deployment file only
+                        git add deploymentfiles/deployment.yml
+
+                        # Commit changes
+                        git commit -m "Update deployment image to version 13" || true
+
+                        # Push explicitly using Username and Token
+                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/eswar1030/mindcircuit13.git HEAD:main
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to tomcat') {
+            steps {
+                echo 'Deploying artifact to tomcat webserver'
+                // Update with your actual Tomcat IP/Hostname and port
+                deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://<YOUR_TOMCAT_IP>:8080')], contextPath: 'facebook-app', war: '**/*.war'
             }
         }
     }
