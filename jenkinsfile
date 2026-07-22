@@ -36,13 +36,13 @@ pipeline {
                 # Update image tag in deployment.yml
                 sed -i 's/batch13:.*/batch13:17/g' deploymentfiles/deployment.yml
                 
-                # Stage ONLY the deployment manifest (avoids committing war files/target folder)
+                # Stage ONLY the deployment manifest
                 git add deploymentfiles/deployment.yml
                 
-                # Commit changes
-                git commit -m "Update deployment image to version 17" || true
+                # '|| true' prevents pipeline failure if working tree is clean
+                git commit -m "Update deployment image version" || true
                 
-                # Push to YOUR FORK instead of devopstraininghub
+                # Push to your fork
                 git push https://${GIT_USER}:${GIT_TOKEN}@github.com/eswar1030/mindcircuit13.git HEAD:main
             '''
         }
