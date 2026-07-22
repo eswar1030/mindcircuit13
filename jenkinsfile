@@ -21,33 +21,33 @@ pipeline {
             }
         }
 
-        stage('Update Deployment File & Push to Fork') {
-            steps {
-                // Uses usernamePassword binding for Git authentication
-                withCredentials([usernamePassword(
-                    credentialsId: "${GITHUB_CRED_ID}", 
-                    usernameVariable: 'GIT_USER', 
-                    passwordVariable: 'GIT_TOKEN'
-                )]) {
-                    sh '''
-                        git config user.email "devopstraininghub@gmail.com"
-                        git config user.name "DevOps Bot"
-
-                        # Update deployment image version
-                        sed -i 's/batch13:.*/batch13:13/g' deploymentfiles/deployment.yml
-
-                        # Stage deployment file only
-                        git add deploymentfiles/deployment.yml
-
-                        # Commit changes
-                        git commit -m "Update deployment image to version 13" || true
-
-                        # Push explicitly using Username and Token
-                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/eswar1030/mindcircuit13.git HEAD:main
-                    '''
-                }
-            }
+        stage('Update Deployment File') {
+    steps {
+        echo 'Update Deployment File'
+        withCredentials([usernamePassword(
+            credentialsId: 'jenkins-push-token-v2', 
+            usernameVariable: 'GIT_USER', 
+            passwordVariable: 'GIT_TOKEN'
+        )]) {
+            sh '''
+                git config user.email "devopstraininghub@gmail.com"
+                git config user.name "DevOps Bot"
+                
+                # Update image tag in deployment.yml
+                sed -i 's/batch13:.*/batch13:17/g' deploymentfiles/deployment.yml
+                
+                # Stage ONLY the deployment manifest (avoids committing war files/target folder)
+                git add deploymentfiles/deployment.yml
+                
+                # Commit changes
+                git commit -m "Update deployment image to version 17" || true
+                
+                # Push to YOUR FORK instead of devopstraininghub
+                git push https://${GIT_USER}:${GIT_TOKEN}@github.com/eswar1030/mindcircuit13.git HEAD:main
+            '''
         }
+    }
+}
 
         stage('Deploy to tomcat') {
             steps {
